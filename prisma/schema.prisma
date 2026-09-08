@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String     @id @default(cuid())
+  name      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  users     User[]
+  vehicles  Vehicle[]
+  drivers   Driver[]
+  shipments Shipment[]
+  plans       Plan[]
+  accessRules AccessRule[]
+}
+
+model User {
+  id        String  @id @default(cuid())
+  companyId String
+  email     String  @unique
+  name      String?
+  role      String  @default("planner")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Vehicle {
+  id           String  @id @default(cuid())
+  companyId    String
+  code         String
+  name         String
+  maxWeightKg  Float
+  maxVolumeM3  Float
+  maxStops     Int     @default(40)
+  heightM      Float?
+  lengthM      Float?
+  widthM       Float?
+  grossWeightKg Float?
+  truckType    String?
+  restrictions Json?
+  active       Boolean @default(true)
+  company      Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  routes       Route[]
+  @@unique([companyId, code])
+}
+
+model Driver {
+  id        String  @id @default(cuid())
+  companyId String
+  name      String
+  phone     String?
+  active    Boolean @default(true)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  routes    Route[]
+}
+
+model Shipment {
+  id              String  @id @default(cuid())
+  companyId       String
+  externalRef     String?
+  recipient       String?
+  address         String
+  city            String?
+  postalCode      String?
+  weightKg        Float   @default(0)
+  volumeM3        Float?
+  pallets         Float?
+  parcels         Int?
+  priority        Int     @default(1)
+  serviceMinutes  Int     @default(15)
+  windowStart     String?
+  windowEnd       String?
+  latitude        Float?
+  longitude       Float?
+  geocodeStatus   String  @default("pending")
+  planningStatus  String  @default("unplanned")
+  deliveryStatus  String  @default("pending")
+  exceptionReason String?
+  company         Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  routeStops      RouteStop[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([companyId, planningStatus])
+}
+
+model Plan {
+  id          String  @id @default(cuid())
+  companyId   String
+  planDate    DateTime
+  status      String  @default("draft")
+  depotName   String?
+  depotLat    Float?
+  depotLon    Float?
+  startTime   String?
+  endTime     String?
+  totalKm     Float   @default(0)
+  totalStops  Int     @default(0)
+  totalWeight Float   @default(0)
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  routes      Route[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([companyId, planDate])
+}
+
+model Route {
+  id               String      @id @default(cuid())
+  planId           String
+  vehicleId        String?
+  driverId         String?
+  sequence         Int
+  zone             String?
+  status           String      @default("planned")
+  totalKm          Float       @default(0)
+  estimatedMinutes Int         @default(0)
+  totalWeight      Float       @default(0)
+  totalVolume      Float       @default(0)
+  plan             Plan        @relation(fields: [planId], references: [id], onDelete: Cascade)
+  vehicle          Vehicle?    @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  driver           Driver?     @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  stops            RouteStop[]
+  @@index([planId, sequence])
+}
+
+model RouteStop {
+  id              String   @id @default(cuid())
+  routeId         String
+  shipmentId      String
+  stopOrder       Int
+  eta             String?
+  arrivalTime     DateTime?
+  deliveryStatus  String   @default("pending")
+  failureReason   String?
+  route            Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  shipment        Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  @@unique([routeId, stopOrder])
+  @@index([shipmentId])
+}
+
+
+model AccessRule {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  type        String
+  value       String?
+  description String?
+  active      Boolean  @default(true)
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
