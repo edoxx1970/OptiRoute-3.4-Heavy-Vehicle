@@ -47,7 +47,11 @@ export default function Home(){
             const k=keys.find(x=>patterns.some(p=>x.toLowerCase().includes(p)));
             return k?String(r[k]).trim():"";
           };
-          const num=(v:string)=>Number(String(v).replace(/\\./g,"").replace(",","."))||0;
+          const num=(v:string)=>{
+            const value=String(v).trim().replace(/\s/g,"");
+            const normalized=value.includes(",")?value.replace(/\./g,"").replace(",","."):value;
+            return Number(normalized)||0;
+          };
           const address=pick(["indirizzo","address","via","strada","destinazione","recapito"]);
           const city=pick(["città","citta","comune","localita","località"]);
           const weight=num(pick(["peso","kg","quintal","lordo"]));

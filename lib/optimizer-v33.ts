@@ -56,7 +56,7 @@ export function optimizeV33(input: Input) {
         const win=windowMinutes(s);
         const arrival=mins+leg;
         const wait=win.start!==undefined && arrival<win.start ? win.start-arrival : 0;
-        const finish=arrival+wait+s.serviceMinutes;
+        const finish=arrival+wait+(s.serviceMinutes ?? 15);
         const back=d(i,0);
         const feasibleWeight=weight+s.weight <= v.maxWeight;
         const feasibleVolume=volume+(s.volume??0) <= v.maxVolume;
@@ -74,7 +74,7 @@ export function optimizeV33(input: Input) {
       remaining.delete(c.s.id);
       current=c.i;
       km+=c.dist;
-      mins=arrival+c.s.serviceMinutes;
+      mins=arrival+(c.s.serviceMinutes ?? 15);
       weight+=c.s.weight;
       volume+=c.s.volume??0;
     }
